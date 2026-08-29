@@ -25,3 +25,19 @@ export function apiKeyError(mode: LlmMode, apiKey: string): string | undefined {
   if (isCloudMode(mode) && !apiKey.trim()) return "云端模式需要填写 API Key";
   return undefined;
 }
+
+export function applyLlmMode<T extends { llm_mode: LlmMode; llm_base_url: string; llm_api_key: string }>(model: T, mode: LlmMode): T {
+  return {
+    ...model,
+    llm_mode: mode,
+    llm_base_url: defaultBaseUrl(mode),
+    llm_api_key: isCloudMode(mode) ? model.llm_api_key : "",
+  };
+}
+
+export function omitPreservedSecret<T extends Record<string, unknown>>(values: T, key: string, wasSet: boolean): T {
+  if (!wasSet || values[key]) return values;
+  const next = { ...values };
+  delete next[key];
+  return next;
+}

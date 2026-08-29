@@ -5,8 +5,8 @@ import { ElMessage } from "element-plus";
 import {
   LLM_MODES,
   apiKeyError,
-  defaultBaseUrl,
   isCloudMode,
+  applyLlmMode,
   type LlmMode,
 } from "../composables/llmForm";
 
@@ -40,9 +40,7 @@ function updateField<K extends keyof LlmFormModel>(key: K, value: LlmFormModel[K
 }
 
 function changeMode(mode: LlmMode) {
-  updateField("llm_mode", mode);
-  updateField("llm_base_url", defaultBaseUrl(mode));
-  if (!isCloudMode(mode)) updateField("llm_api_key", "");
+  emit("update:modelValue", applyLlmMode(model.value, mode));
 }
 
 function validateApiKey() {

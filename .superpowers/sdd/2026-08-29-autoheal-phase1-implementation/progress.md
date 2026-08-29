@@ -52,3 +52,5 @@
 - Compose validation passed for default and `local` profiles; backend and frontend images built.
 - Runtime smoke test initially exposed `passlib 1.7.4` with Docker-resolved `bcrypt 5.0.0`; `/api/v1/setup` returned HTTP 500 while hashing the first admin password.
 - Root-cause fix: pin `bcrypt==4.0.1` and rebuild the backend image. Fresh container verification now passes Setup, login, JWT-protected Dashboard, secret masking, and cloud-mode API-key validation.
+- Merge review identified six boundary issues; follow-up fixes added setup-aware routing, atomic LLM mode transitions, preserved secret updates, a real health-check HTTP 503, rejection of the example production secret, and a safe catch-all JSON error envelope.
+- Final verification after review fixes: backend `24 passed`; frontend `9 passed`; typecheck, production build, Python compile, Compose validation, and fresh container smoke checks passed.

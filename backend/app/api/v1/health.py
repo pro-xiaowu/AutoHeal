@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from app.api.response import failure, ok
@@ -13,5 +14,5 @@ def health(request: Request):
         with request.app.state.engine.connect() as connection:
             connection.execute(text("SELECT 1"))
     except Exception:
-        return failure("数据库不可用", code=503)
+        return JSONResponse(status_code=503, content=failure("数据库不可用", code=503))
     return ok({"status": "ok"})

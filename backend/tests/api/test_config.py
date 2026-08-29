@@ -48,3 +48,21 @@ def test_config_update_returns_unified_error_for_invalid_mode(tmp_path):
     assert response.status_code == 422
     assert response.json()["code"] != 0
     assert set(response.json()) == {"code", "message", "data"}
+
+
+def test_saving_other_settings_preserves_existing_prometheus_token(tmp_path):
+    client = make_authenticated_client(tmp_path)
+    assert client.put(
+        "/api/v1/config",
+        json={"values": {"prometheus_token": "prom-secret"}},
+    ).status_code == 200
+
+    response = client.put(
+        "/api/v1/config",
+        json={"values": {"llm_model": "new-model", "prometheus_token": ""}},
+    )
+
+    assert response.status_code == 200
+    config = client.get("/api/v1/config").json()["data"]
+    assert config["prometheus_token"]["is_set"] is True
+    assert config["llm_model"]["value"] == "new-model"

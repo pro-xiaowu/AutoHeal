@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { apiKeyError, defaultBaseUrl, isCloudMode } from "../composables/llmForm";
+import { apiKeyError, applyLlmMode, defaultBaseUrl, isCloudMode, omitPreservedSecret } from "../composables/llmForm";
 
 describe("LLM form mode rules", () => {
   it("treats local mode as not requiring an API key", () => {
@@ -17,5 +17,23 @@ describe("LLM form mode rules", () => {
   it("returns provider defaults for the selected mode", () => {
     expect(defaultBaseUrl("local")).toBe("http://ollama:11434");
     expect(defaultBaseUrl("qwen")).toContain("dashscope.aliyuncs.com");
+  });
+
+  it("updates mode and dependent fields in one state transition", () => {
+    const next = applyLlmMode(
+      { llm_mode: "local", llm_base_url: "http://ollama:11434", llm_api_key: "" },
+      "deepseek",
+    );
+
+    expect(next).toEqual({
+      llm_mode: "deepseek",
+      llm_base_url: "https://api.deepseek.com/v1",
+      llm_api_key: "",
+    });
+  });
+
+  it("omits an unchanged secret instead of clearing it", () => {
+    expect(omitPreservedSecret({ prometheus_token: "" }, "prometheus_token", true)).toEqual({});
+    expect(omitPreservedSecret({ prometheus_token: "new-secret" }, "prometheus_token", true)).toEqual({ prometheus_token: "new-secret" });
   });
 });

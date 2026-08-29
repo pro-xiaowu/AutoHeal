@@ -4,12 +4,14 @@ import { ElMessage } from "element-plus";
 
 import LlmConfigFields, { type LlmFormModel } from "../components/LlmConfigFields.vue";
 import { useConfigStore } from "../stores/config";
+import { omitPreservedSecret } from "../composables/llmForm";
 
 const store = useConfigStore();
 const loading = ref(true);
 const saving = ref(false);
 const testing = ref(false);
 const secretWasSet = ref(false);
+const prometheusTokenWasSet = ref(false);
 const llmFields = ref<InstanceType<typeof LlmConfigFields>>();
 const form = reactive<LlmFormModel>({
   llm_mode: "local", llm_model: "qwen2.5:7b", llm_base_url: "http://ollama:11434", llm_api_key: "",
@@ -27,6 +29,7 @@ function applyConfig(config: Record<string, { value: string | number | boolean; 
   const apiEntry = config.llm_api_key;
   secretWasSet.value = Boolean(apiEntry?.is_set);
   if (apiEntry?.is_set) form.llm_api_key = "";
+  prometheusTokenWasSet.value = Boolean(config.prometheus_token?.is_set);
   alertForm.prometheus_url = String(config.prometheus_url?.value || "");
   alertForm.prometheus_token = "";
 }
@@ -40,8 +43,9 @@ async function save() {
   if (!llmFields.value?.validateApiKey()) return;
   saving.value = true;
   try {
-    const values: Record<string, unknown> = { ...form, ...alertForm };
-    if (!form.llm_api_key && secretWasSet.value) delete values.llm_api_key;
+    let values: Record<string, unknown> = { ...form, ...alertForm };
+    values = omitPreservedSecret(values, "llm_api_key", secretWasSet.value);
+    values = omitPreservedSecret(values, "prometheus_token", prometheusTokenWasSet.value);
     const config = await store.saveConfig(values);
     applyConfig(config);
     ElMessage.success("配置已保存并即时生效");

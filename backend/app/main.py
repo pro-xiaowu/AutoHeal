@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
@@ -11,6 +12,9 @@ from app.api.v1 import auth, config, dashboard, health, setup
 from app.core.config_manager import ConfigManager
 from app.core.database import get_engine, init_db
 from app.core.settings import Settings
+
+
+logger = logging.getLogger(__name__)
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -48,6 +52,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.exception_handler(SQLAlchemyError)
     async def database_exception_handler(_: Request, exc: SQLAlchemyError):
         return JSONResponse(status_code=500, content=failure("数据库操作失败", code=500))
+
+    @app.exception_handler(Exception)
+    async def unhandled_exception_handler(_: Request, exc: Exception):
+        logger.error("Unhandled application error (%s)", type(exc).__name__)
+        return JSONResponse(status_code=500, content=failure("内部服务器错误", code=500))
 
     app.include_router(health.router, prefix="/api/v1")
     app.include_router(auth.router, prefix="/api/v1")

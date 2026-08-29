@@ -1,11 +1,13 @@
 import { createRouter, createWebHistory } from "vue-router";
 
+import { getSetupStatus } from "../api/config";
 import { useAuthStore } from "../stores/auth";
 import Dashboard from "../views/Dashboard.vue";
 import EmptyModule from "../views/EmptyModule.vue";
 import Login from "../views/Login.vue";
 import Settings from "../views/Settings.vue";
 import Setup from "../views/Setup.vue";
+import { resolveRoute } from "./guards";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -21,11 +23,22 @@ const router = createRouter({
   ],
 });
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const auth = useAuthStore();
-  if (!to.meta.public && !auth.isAuthenticated) return "/login";
-  if (to.path === "/login" && auth.isAuthenticated) return "/dashboard";
-  return true;
+  let setupCompleted = true;
+  if (to.path !== "/setup") {
+    try {
+      setupCompleted = Boolean((await getSetupStatus()).setup_completed);
+    } catch {
+      setupCompleted = true;
+    }
+  }
+  return resolveRoute({
+    path: to.path,
+    isPublic: to.meta.public === true,
+    setupCompleted,
+    isAuthenticated: auth.isAuthenticated,
+  });
 });
 
 export default router;

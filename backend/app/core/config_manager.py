@@ -107,6 +107,8 @@ class ConfigManager:
             raise ValueError("API key is required for cloud LLM modes")
         for key, value in values.items():
             row = rows[key]
+            if row.is_secret and not str(value).strip():
+                continue
             serialized = self._serialize(value)
             if row.is_secret and str(value):
                 serialized = encrypt_secret(str(value), self.settings)

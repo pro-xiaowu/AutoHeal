@@ -47,6 +47,7 @@ class Settings(BaseSettings):
         if self.environment == "production":
             placeholders = {
                 "development-secret-key": "SECRET_KEY",
+                "change-me": "SECRET_KEY",
                 "0Vv2P6W3Jj3X7P0zZt3Tq1b6c4l5w2x8s9d0f1g2h3i=": "FERNET_KEY",
                 "": "SECRET_KEY or FERNET_KEY",
             }
