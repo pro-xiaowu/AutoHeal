@@ -73,3 +73,12 @@ def test_setup_rejects_legacy_mode_and_azure_provider(tmp_path):
         json={"username": "admin", "password": "strong-password", "llm_provider": "azure", "llm_api_format": "openai_chat", "llm_api_key": "secret"},
     )
     assert azure.status_code == 422
+
+
+def test_setup_model_discovery_is_anonymous_before_setup_and_locked_after(tmp_path):
+    client = make_client(tmp_path)
+    response = client.post("/api/v1/setup/models/discover", json={"values": {"llm_provider": "ollama", "llm_api_format": "ollama"}})
+    assert response.status_code == 200
+    assert set(response.json()) == {"code", "message", "data"}
+    assert client.post("/api/v1/setup", json={"username": "admin", "password": "strong-password", "llm_provider": "ollama", "llm_api_format": "ollama"}).status_code == 200
+    assert client.post("/api/v1/setup/models/discover", json={"values": {"llm_provider": "ollama", "llm_api_format": "ollama"}}).status_code == 409

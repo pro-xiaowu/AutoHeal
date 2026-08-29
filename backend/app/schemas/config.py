@@ -9,3 +9,7 @@ class ConfigUpdateRequest(BaseModel):
 
 class LlmTestRequest(BaseModel):
     values: dict[str, Any] = Field(default_factory=dict)
+
+
+class ModelDiscoveryRequest(BaseModel):
+    values: dict[str, Any] = Field(default_factory=dict)

@@ -86,3 +86,9 @@ def test_saving_other_settings_preserves_existing_prometheus_token(tmp_path):
     config = client.get("/api/v1/config").json()["data"]
     assert config["prometheus_token"]["is_set"] is True
     assert config["llm_model"]["value"] == "new-model"
+
+
+def test_model_discovery_requires_jwt(tmp_path):
+    settings = Settings(_env_file=None, database_url=f"sqlite:///{tmp_path / 'anonymous-discovery.db'}", fernet_key="0Vv2P6W3Jj3X7P0zZt3Tq1b6c4l5w2x8s9d0f1g2h3i=", secret_key="test-secret")
+    client = TestClient(create_app(settings))
+    assert client.post("/api/v1/config/models/discover", json={"values": {"llm_provider": "ollama", "llm_api_format": "ollama"}}).status_code == 401

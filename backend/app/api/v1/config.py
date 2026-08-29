@@ -7,7 +7,8 @@ from app.api.deps import get_current_user, get_db
 from app.api.response import ok
 from app.core.config_manager import ConfigManager
 from app.models.user import User
-from app.schemas.config import ConfigUpdateRequest, LlmTestRequest
+from app.schemas.config import ConfigUpdateRequest, LlmTestRequest, ModelDiscoveryRequest
+from app.services.model_discovery import discover_models
 from app.services.llm_test import check_llm_connection
 
 
@@ -57,3 +58,18 @@ def test_llm(
     if payload.values.get("llm_api_key") == "********":
         values["llm_api_key"] = current.get("llm_api_key", "")
     return ok(check_llm_connection(values, request.app.state.settings))
+
+
+@router.post("/models/discover")
+def discover_config_models(
+    payload: ModelDiscoveryRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    manager = _manager(request, db)
+    current = manager.get_values()
+    values: dict[str, Any] = {**current, **payload.values}
+    if payload.values.get("llm_api_key") in (None, "", "********"):
+        values["llm_api_key"] = current.get("llm_api_key", "")
+    return ok(discover_models(values, request.app.state.settings))

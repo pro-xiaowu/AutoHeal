@@ -28,6 +28,16 @@ LEGACY_MODE_MAP: dict[str, tuple[str, str, bool]] = {
     "azure": ("custom", "openai_chat", True),
 }
 
+DEFAULT_BASE_URLS = {
+    "ollama": "http://ollama:11434",
+    "openai": "https://api.openai.com/v1",
+    "anthropic": "https://api.anthropic.com",
+    "deepseek": "https://api.deepseek.com/v1",
+    "qwen": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "zhipu": "https://open.bigmodel.cn/api/paas/v4",
+    "custom": "",
+}
+
 
 def normalize_provider_format(values: Mapping[str, object]) -> dict[str, object]:
     normalized = dict(values)
@@ -60,6 +70,23 @@ def validate_provider_format(values: Mapping[str, object]) -> None:
         raise ValueError("Unsupported provider and API format combination")
     if provider != "ollama" and not str(values.get("llm_api_key", "")).strip():
         raise ValueError("API key is required for cloud LLM providers")
+
+
+def resolve_base_url(config: Mapping[str, object], provider: str, settings: Settings) -> str:
+    configured = str(config.get("llm_base_url") or "").strip()
+    if configured:
+        return configured
+    if provider == "ollama":
+        return settings.llm_base_url or DEFAULT_BASE_URLS[provider]
+    return DEFAULT_BASE_URLS.get(provider, "")
+
+
+def resolve_timeout(config: Mapping[str, object], settings: Settings) -> float:
+    raw = config.get("llm_timeout", settings.llm_timeout_seconds)
+    try:
+        return max(1.0, min(float(raw), 3600.0))
+    except (TypeError, ValueError):
+        return float(settings.llm_timeout_seconds)
 
 
 DEFAULT_CONFIGS: tuple[dict[str, object], ...] = (

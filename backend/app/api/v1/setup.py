@@ -8,7 +8,9 @@ from app.api.response import ok
 from app.core.config_manager import ConfigManager
 from app.core.security import hash_password
 from app.models.user import User
+from app.schemas.config import ModelDiscoveryRequest
 from app.schemas.setup import SetupRequest
+from app.services.model_discovery import discover_models
 
 
 router = APIRouter(prefix="/setup", tags=["setup"])
@@ -25,6 +27,14 @@ def setup_status(request: Request, db: Session = Depends(get_db)):
     manager = _manager(request, db)
     values = manager.get_values()
     return ok({"setup_completed": bool(values.get("setup_completed", False)), "defaults": manager.get_all()})
+
+
+@router.post("/models/discover")
+def discover_setup_models(payload: ModelDiscoveryRequest, request: Request, db: Session = Depends(get_db)):
+    manager = _manager(request, db)
+    if bool(manager.get_values().get("setup_completed", False)):
+        raise HTTPException(status_code=409, detail="系统已完成初始化")
+    return ok(discover_models(payload.values, request.app.state.settings))
 
 
 @router.post("")
