@@ -9,18 +9,18 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     chroma_url: str = "http://localhost:8001"
     secret_key: str = "development-secret-key"
-    fernet_key: str = "development-fernet-key"
+    fernet_key: str = "0Vv2P6W3Jj3X7P0zZt3Tq1b6c4l5w2x8s9d0f1g2h3i="
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173"])
 
     llm_mode: str = "local"
     llm_model: str = "qwen2.5:7b"
-    llm_base_url: str = "http://localhost:11434"
+    llm_base_url: str = "http://ollama:11434"
     llm_api_key: str = ""
-    llm_temperature: float = 0.2
+    llm_temperature: float = 0.1
     llm_max_tokens: int = 2048
-    llm_timeout_seconds: int = 120
+    llm_timeout_seconds: int = 60
     llm_max_retries: int = 3
 
     prometheus_url: str = ""
@@ -47,7 +47,7 @@ class Settings(BaseSettings):
         if self.environment == "production":
             placeholders = {
                 "development-secret-key": "SECRET_KEY",
-                "development-fernet-key": "FERNET_KEY",
+                "0Vv2P6W3Jj3X7P0zZt3Tq1b6c4l5w2x8s9d0f1g2h3i=": "FERNET_KEY",
                 "": "SECRET_KEY or FERNET_KEY",
             }
             if self.secret_key in placeholders:
