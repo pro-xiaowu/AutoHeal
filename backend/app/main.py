@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -12,18 +14,20 @@ from app.core.settings import Settings
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings()
-    app = FastAPI(title=settings.app_name)
-    app.state.settings = settings
-    app.state.engine = get_engine(settings.database_url)
-    init_db(app.state.engine)
 
-    @app.on_event("startup")
-    def startup() -> None:
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
         init_db(app.state.engine)
         from sqlalchemy.orm import Session
 
         with Session(app.state.engine) as db:
             ConfigManager(db, settings).seed_defaults()
+        yield
+
+    app = FastAPI(title=settings.app_name, lifespan=lifespan)
+    app.state.settings = settings
+    app.state.engine = get_engine(settings.database_url)
+    init_db(app.state.engine)
 
     @app.exception_handler(HTTPException)
     async def http_exception_handler(_: Request, exc: HTTPException):

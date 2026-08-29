@@ -18,7 +18,7 @@ def _category_for_error(error: Exception) -> str:
     return "unreachable"
 
 
-def test_llm_connection(config: Mapping[str, object], settings: Settings) -> dict[str, object]:
+def check_llm_connection(config: Mapping[str, object], settings: Settings) -> dict[str, object]:
     started = time.perf_counter()
     mode = str(config.get("llm_mode", "local"))
     try:
@@ -26,7 +26,8 @@ def test_llm_connection(config: Mapping[str, object], settings: Settings) -> dic
             base_url = str(config.get("llm_base_url") or settings.llm_base_url).rstrip("/")
             timeout = float(config.get("llm_timeout", settings.llm_timeout_seconds))
             response = httpx.get(f"{base_url}/api/tags", timeout=timeout)
-            response.raise_for_status()
+            if response.status_code >= 400:
+                response.raise_for_status()
             models = response.json().get("models", [])
             target = str(config.get("llm_model", settings.llm_model))
             names = {str(item.get("name", "")) for item in models}

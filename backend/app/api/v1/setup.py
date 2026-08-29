@@ -57,4 +57,7 @@ def complete_setup(payload: SetupRequest, request: Request, db: Session = Depend
     except IntegrityError as exc:
         db.rollback()
         raise HTTPException(status_code=409, detail="管理员账号已存在") from exc
+    except ValueError as exc:
+        db.rollback()
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return ok({"setup_completed": True, "username": user.username}, "初始化完成")

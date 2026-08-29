@@ -8,7 +8,7 @@ from app.api.response import ok
 from app.core.config_manager import ConfigManager
 from app.models.user import User
 from app.schemas.config import ConfigUpdateRequest, LlmTestRequest
-from app.services.llm_test import test_llm_connection
+from app.services.llm_test import check_llm_connection
 
 
 router = APIRouter(prefix="/config", tags=["config"])
@@ -54,4 +54,4 @@ def test_llm(
     values: dict[str, Any] = {**current, **payload.values}
     if payload.values.get("llm_api_key") == "********":
         values["llm_api_key"] = current.get("llm_api_key", "")
-    return ok(test_llm_connection(values, request.app.state.settings))
+    return ok(check_llm_connection(values, request.app.state.settings))

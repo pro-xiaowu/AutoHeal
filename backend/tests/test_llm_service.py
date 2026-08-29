@@ -4,7 +4,7 @@ import httpx
 
 from app.core.llm import get_llm
 from app.core.settings import Settings
-from app.services.llm_test import test_llm_connection
+from app.services.llm_test import check_llm_connection
 
 
 def config(**overrides):
@@ -36,7 +36,7 @@ def test_llm_factory_selects_ollama_or_openai_compatible_provider():
 def test_local_connection_reports_missing_model():
     response = httpx.Response(200, json={"models": [{"name": "other:latest"}]})
     with patch("app.services.llm_test.httpx.get", return_value=response):
-        result = test_llm_connection(config(), Settings(_env_file=None))
+        result = check_llm_connection(config(), Settings(_env_file=None))
     assert result["ok"] is False
     assert result["category"] == "model_not_found"
 
@@ -45,7 +45,7 @@ def test_api_connection_normalizes_authentication_failure():
     fake_llm = Mock()
     fake_llm.invoke.side_effect = Exception("401 invalid api key")
     with patch("app.services.llm_test.get_llm", return_value=fake_llm):
-        result = test_llm_connection(
+        result = check_llm_connection(
             config(llm_mode="openai", llm_api_key="sk-test"), Settings(_env_file=None)
         )
     assert result["ok"] is False
