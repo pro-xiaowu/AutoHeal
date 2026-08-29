@@ -41,3 +41,8 @@ export function omitPreservedSecret<T extends Record<string, unknown>>(values: T
   delete next[key];
   return next;
 }
+
+export function mergeLlmForm<T extends object>(target: T, source: Partial<T>): T {
+  Object.assign(target, source);
+  return target;
+}

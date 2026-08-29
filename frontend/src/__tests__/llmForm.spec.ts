@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { apiKeyError, applyLlmMode, defaultBaseUrl, isCloudMode, omitPreservedSecret } from "../composables/llmForm";
+import { apiKeyError, applyLlmMode, defaultBaseUrl, isCloudMode, mergeLlmForm, omitPreservedSecret } from "../composables/llmForm";
 
 describe("LLM form mode rules", () => {
   it("treats local mode as not requiring an API key", () => {
@@ -35,5 +35,11 @@ describe("LLM form mode rules", () => {
   it("omits an unchanged secret instead of clearing it", () => {
     expect(omitPreservedSecret({ prometheus_token: "" }, "prometheus_token", true)).toEqual({});
     expect(omitPreservedSecret({ prometheus_token: "new-secret" }, "prometheus_token", true)).toEqual({ prometheus_token: "new-secret" });
+  });
+
+  it("merges child updates into the existing form object", () => {
+    const current = { llm_mode: "local", llm_base_url: "http://ollama:11434", llm_api_key: "" };
+    mergeLlmForm(current, { llm_mode: "qwen", llm_base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1" });
+    expect(current).toEqual({ llm_mode: "qwen", llm_base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1", llm_api_key: "" });
   });
 });
