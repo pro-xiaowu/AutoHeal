@@ -17,8 +17,14 @@ class Settings(BaseSettings):
     llm_mode: str = "local"
     llm_model: str = "qwen2.5:7b"
     llm_base_url: str = "http://localhost:11434"
+    llm_api_key: str = ""
     llm_temperature: float = 0.2
+    llm_max_tokens: int = 2048
     llm_timeout_seconds: int = 120
+    llm_max_retries: int = 3
+
+    prometheus_url: str = ""
+    prometheus_token: str = ""
 
     prometheus_enabled: bool = True
     prometheus_port: int = 9090
