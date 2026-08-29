@@ -1,7 +1,10 @@
 import { createApp } from "vue";
+import { createPinia } from "pinia";
+import ElementPlus from "element-plus";
+import "element-plus/dist/index.css";
 
-const App = {
-  template: "<main><h1>AutoHeal</h1></main>",
-};
+import App from "./App.vue";
+import router from "./router";
+import "./styles/theme.css";
 
-createApp(App).mount("#app");
+createApp(App).use(createPinia()).use(router).use(ElementPlus).mount("#app");
