@@ -10,5 +10,9 @@ node_modules/
 dist/
 .env
 backend/data/
+*.db
+*.sqlite
+*.sqlite3
 backend/.pytest_cache/
 frontend/.vite/
+*.db
