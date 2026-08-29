@@ -19,7 +19,8 @@ def test_setup_creates_admin_and_login_returns_jwt(tmp_path):
     payload = {
         "username": "admin",
         "password": "strong-password",
-        "llm_mode": "local",
+        "llm_provider": "ollama",
+        "llm_api_format": "ollama",
         "llm_model": "qwen2.5:7b",
         "llm_base_url": "http://ollama:11434",
     }
@@ -38,7 +39,7 @@ def test_setup_creates_admin_and_login_returns_jwt(tmp_path):
 
 def test_setup_is_locked_after_first_completion(tmp_path):
     client = make_client(tmp_path)
-    payload = {"username": "admin", "password": "strong-password", "llm_mode": "local"}
+    payload = {"username": "admin", "password": "strong-password", "llm_provider": "ollama", "llm_api_format": "ollama"}
     assert client.post("/api/v1/setup", json=payload).status_code == 200
 
     response = client.post("/api/v1/setup", json=payload)
@@ -52,8 +53,23 @@ def test_cloud_setup_requires_api_key(tmp_path):
     client = make_client(tmp_path)
     response = client.post(
         "/api/v1/setup",
-        json={"username": "admin", "password": "strong-password", "llm_mode": "openai"},
+        json={"username": "admin", "password": "strong-password", "llm_provider": "openai", "llm_api_format": "openai_chat"},
     )
 
     assert response.status_code == 422
     assert "API key" in response.json()["message"]
+
+
+def test_setup_rejects_legacy_mode_and_azure_provider(tmp_path):
+    client = make_client(tmp_path)
+    legacy = client.post(
+        "/api/v1/setup",
+        json={"username": "admin", "password": "strong-password", "llm_mode": "local"},
+    )
+    assert legacy.status_code == 422
+
+    azure = client.post(
+        "/api/v1/setup",
+        json={"username": "admin", "password": "strong-password", "llm_provider": "azure", "llm_api_format": "openai_chat", "llm_api_key": "secret"},
+    )
+    assert azure.status_code == 422

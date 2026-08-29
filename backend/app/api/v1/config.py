@@ -34,6 +34,8 @@ def update_config(
 ):
     if "setup_completed" in payload.values:
         raise HTTPException(status_code=422, detail="setup_completed 只能由安装向导设置")
+    if "llm_mode" in payload.values:
+        raise HTTPException(status_code=422, detail="llm_mode 只读，请使用 llm_provider 和 llm_api_format")
     try:
         manager = _manager(request, db)
         manager.set_values(payload.values, actor=user.username)

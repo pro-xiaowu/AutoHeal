@@ -14,7 +14,7 @@ def make_authenticated_client(tmp_path):
     client = TestClient(create_app(settings))
     client.post(
         "/api/v1/setup",
-        json={"username": "admin", "password": "strong-password", "llm_mode": "local"},
+        json={"username": "admin", "password": "strong-password", "llm_provider": "ollama", "llm_api_format": "ollama"},
     )
     token = client.post(
         "/api/v1/auth/login", json={"username": "admin", "password": "strong-password"}
@@ -41,13 +41,33 @@ def test_config_requires_jwt_and_masks_secret(tmp_path):
     assert "sk-secret" not in client.get("/api/v1/config").text
 
 
-def test_config_update_returns_unified_error_for_invalid_mode(tmp_path):
+def test_config_update_rejects_legacy_mode(tmp_path):
     client = make_authenticated_client(tmp_path)
-    response = client.put("/api/v1/config", json={"values": {"llm_mode": "invalid"}})
+    response = client.put("/api/v1/config", json={"values": {"llm_mode": "local"}})
 
     assert response.status_code == 422
     assert response.json()["code"] != 0
     assert set(response.json()) == {"code", "message", "data"}
+
+
+def test_config_update_rejects_invalid_provider_format(tmp_path):
+    client = make_authenticated_client(tmp_path)
+    response = client.put(
+        "/api/v1/config",
+        json={"values": {"llm_provider": "ollama", "llm_api_format": "openai_chat"}},
+    )
+    assert response.status_code == 422
+
+
+def test_dashboard_returns_canonical_provider_fields(tmp_path):
+    client = make_authenticated_client(tmp_path)
+    response = client.get("/api/v1/dashboard/overview")
+
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["llm_provider"] == "ollama"
+    assert data["llm_api_format"] == "ollama"
+    assert data["llm_migration_required"] is False
 
 
 def test_saving_other_settings_preserves_existing_prometheus_token(tmp_path):

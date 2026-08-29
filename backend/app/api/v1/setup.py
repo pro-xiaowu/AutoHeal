@@ -40,7 +40,8 @@ def complete_setup(payload: SetupRequest, request: Request, db: Session = Depend
         db.flush()
         manager.set_values(
             {
-                "llm_mode": payload.llm_mode,
+                "llm_provider": payload.llm_provider,
+                "llm_api_format": payload.llm_api_format,
                 "llm_model": payload.llm_model,
                 "llm_base_url": payload.llm_base_url,
                 "llm_api_key": payload.llm_api_key,

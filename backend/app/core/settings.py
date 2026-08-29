@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173"])
 
     llm_mode: str = "local"
+    llm_provider: str = "ollama"
+    llm_api_format: str = "ollama"
     llm_model: str = "qwen2.5:7b"
     llm_base_url: str = "http://ollama:11434"
     llm_api_key: str = ""
