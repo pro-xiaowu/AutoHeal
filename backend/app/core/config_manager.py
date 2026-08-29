@@ -40,8 +40,16 @@ def normalize_provider_format(values: Mapping[str, object]) -> dict[str, object]
         if api_format is None:
             normalized["llm_api_format"] = mapped_format
     elif api_format is None:
-        supported = PROVIDER_FORMATS.get(str(provider), set())
-        normalized["llm_api_format"] = next(iter(supported), "openai_chat")
+        defaults = {
+            "ollama": "ollama",
+            "openai": "openai_chat",
+            "anthropic": "anthropic_messages",
+            "deepseek": "openai_chat",
+            "qwen": "openai_chat",
+            "zhipu": "openai_chat",
+            "custom": "openai_chat",
+        }
+        normalized["llm_api_format"] = defaults.get(str(provider), "openai_chat")
     return normalized
 
 
@@ -84,7 +92,7 @@ class ConfigManager:
         existing = {row.config_key for row in self.session.scalars(select(SystemConfig)).all()}
         self.migrate_legacy_mode(existing)
         existing = {row.config_key for row in self.session.scalars(select(SystemConfig)).all()}
-        settings_values = {
+        settings_values = normalize_provider_format({
             "llm_provider": self.settings.llm_provider,
             "llm_api_format": self.settings.llm_api_format,
             "llm_migration_required": False,
@@ -97,7 +105,15 @@ class ConfigManager:
             "llm_max_retries": self.settings.llm_max_retries,
             "prometheus_url": self.settings.prometheus_url,
             "prometheus_token": self.settings.prometheus_token,
-        }
+        })
+        provider = str(settings_values.get("llm_provider", "ollama"))
+        api_format = str(settings_values.get("llm_api_format", "ollama"))
+        if api_format not in PROVIDER_FORMATS.get(provider, set()):
+            defaults = {
+                "ollama": "ollama", "openai": "openai_chat", "anthropic": "anthropic_messages",
+                "deepseek": "openai_chat", "qwen": "openai_chat", "zhipu": "openai_chat", "custom": "openai_chat",
+            }
+            settings_values["llm_api_format"] = defaults.get(provider, "openai_chat")
         for item in DEFAULT_CONFIGS:
             key = str(item["key"])
             if key in existing:
@@ -189,7 +205,7 @@ class ConfigManager:
         validate_provider_format(normalize_provider_format(merged))
         for key, value in values.items():
             row = rows[key]
-            if row.is_secret and not str(value).strip():
+            if row.is_secret and str(value).strip() in {"", "********"}:
                 continue
             serialized = self._serialize(value)
             if row.is_secret and str(value):

@@ -63,6 +63,24 @@ def test_environment_defaults_fill_only_missing_database_values(tmp_path, monkey
     session.close()
 
 
+def test_masked_secret_value_preserves_existing_secret(tmp_path):
+    manager, session = make_manager(tmp_path)
+    manager.seed_defaults()
+    manager.set_values({"llm_api_key": "sk-real"})
+    manager.set_values({"llm_api_key": "********"})
+    assert manager.get_values()["llm_api_key"] == "sk-real"
+    session.close()
+
+
+def test_provider_environment_default_uses_matching_format(tmp_path):
+    manager, session = make_manager(tmp_path, llm_provider="openai", llm_api_format="ollama")
+    manager.seed_defaults()
+    values = manager.get_values()
+    assert values["llm_provider"] == "openai"
+    assert values["llm_api_format"] == "openai_chat"
+    session.close()
+
+
 def test_legacy_local_mode_maps_to_ollama(tmp_path):
     manager, session = make_manager(tmp_path)
     session.add(SystemConfig(config_key="llm_mode", config_value="local", is_secret=False, category="ai_engine"))
