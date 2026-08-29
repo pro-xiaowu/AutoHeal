@@ -1,4 +1,4 @@
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -31,14 +31,21 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    @field_validator("secret_key", "fernet_key")
-    @classmethod
-    def validate_production_secrets(cls, value: str, info):
-        if info.data.get("environment") == "production" and not value:
-            raise ValueError(f"{info.field_name.upper()} must be explicitly configured in production")
-        return value
-
     @field_validator("environment")
     @classmethod
-    def validate_environment(cls, value: str):
+    def normalize_environment(cls, value: str):
         return value.lower()
+
+    @model_validator(mode="after")
+    def validate_production_secrets(self):
+        if self.environment == "production":
+            placeholders = {
+                "development-secret-key": "SECRET_KEY",
+                "development-fernet-key": "FERNET_KEY",
+                "": "SECRET_KEY or FERNET_KEY",
+            }
+            if self.secret_key in placeholders:
+                raise ValueError(f"{placeholders[self.secret_key]} must be explicitly configured in production")
+            if self.fernet_key in ("", "development-fernet-key"):
+                raise ValueError("FERNET_KEY must be explicitly configured in production")
+        return self

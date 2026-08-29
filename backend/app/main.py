@@ -9,7 +9,7 @@ def create_app() -> FastAPI:
 
     @app.get("/api/v1/health")
     def health() -> dict:
-        return {"data": {"status": "ok"}, "error": None}
+        return {"code": 0, "message": "ok", "data": {"status": "ok"}}
 
     return app
 
