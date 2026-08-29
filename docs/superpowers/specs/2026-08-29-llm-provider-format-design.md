@@ -60,13 +60,19 @@
 
 ### 模型发现
 
-新增受 JWT 保护的接口：
+新增两个复用同一发现服务的接口：
 
 ```text
 POST /api/v1/config/models/discover
+POST /api/v1/setup/models/discover
 ```
 
-请求体使用与连接测试相同的 `values` 结构，允许使用前端尚未保存的 provider、format、Base URL、模型和 API Key。掩码值 `********` 或省略的 API Key 会复用数据库中已保存的密钥。返回统一结构：
+- `/config/models/discover` 需要 JWT，用于 Settings。
+- `/setup/models/discover` 只在安装未完成时开放；安装完成后返回 HTTP 409，避免长期暴露匿名代理入口。
+- 两个接口的请求体都使用与连接测试相同的 `values` 结构，允许使用前端尚未保存的 provider、format、Base URL、模型和 API Key。
+- 掩码值 `********` 或省略的 API Key 只在受保护的 Config 接口复用数据库中已保存的密钥。
+
+返回统一结构：
 
 ```json
 {
@@ -110,12 +116,13 @@ Settings 和 Setup 共用配置表单：
 
 1. 先选择服务商。
 2. 根据服务商显示可用 API 格式，自动填充默认格式和 Base URL。
-3. 点击“刷新模型”调用模型发现接口。
+3. 当服务商、格式、Base URL 和所需 API Key 齐全时自动发现模型；API Key 在输入框失焦后触发，其他字段变化使用短暂防抖。
 4. 获取成功且列表非空时只显示模型下拉框。
 5. 获取失败显示错误状态和文本输入框，用户仍可继续保存。
 6. 获取成功但列表为空时视为无法获取，切换到文本输入框。
 7. `ollama` 隐藏 API Key；其他需要密钥的服务商显示必填 API Key。
 8. `openai_responses` 只在 `openai` 和 `custom` 服务商下可见。
+9. 模型字段旁保留“刷新模型”按钮，允许用户在服务端模型发生变化后手动重新获取。
 
 表单状态不会把掩码值 `********` 当成新密钥提交；空白密钥表示保留已保存密钥。
 
@@ -134,6 +141,7 @@ Settings 和 Setup 共用配置表单：
 - 旧 `llm_mode` 映射和 Azure 迁移。
 - Ollama、OpenAI-compatible、Anthropic 模型列表解析，使用 HTTP mock。
 - 模型发现超时、认证失败、空列表和不支持接口时的手动回退。
+- Setup 匿名发现只在安装未完成时可用；Settings 发现必须携带 JWT。
 - Chat、Responses、Anthropic、Ollama 工厂选择。
 - API Key 加密、掩码和保留语义。
 
@@ -142,6 +150,7 @@ Settings 和 Setup 共用配置表单：
 - 服务商改变时格式和 Base URL 联动。
 - Responses 仅在允许的服务商/格式组合下显示。
 - 模型刷新成功、失败、空列表和手动输入状态。
+- 配置齐全时自动发现，API Key 输入框失焦后发现，并支持手动刷新。
 - Ollama 隐藏 API Key，云端模式校验 API Key。
 - Setup 与 Settings 使用同一套表单规则。
 
