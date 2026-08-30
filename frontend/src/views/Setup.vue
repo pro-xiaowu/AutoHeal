@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref } from "vue";
+import { onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 
@@ -26,10 +26,16 @@ const form = reactive<SetupPayload>({
 });
 const llmFields = ref<InstanceType<typeof LlmConfigFields>>();
 const discovery = reactive({ models: [] as string[], loading: false, manual: true, error: "" });
+let discoveryTimer: ReturnType<typeof setTimeout> | undefined;
 
 function updateLlmForm(value: LlmFormModel) {
   mergeLlmForm(form, value);
-  void discover();
+  scheduleDiscover();
+}
+
+function scheduleDiscover() {
+  if (discoveryTimer) clearTimeout(discoveryTimer);
+  discoveryTimer = setTimeout(() => { void discover(); }, 300);
 }
 
 async function discover() {
@@ -64,6 +70,8 @@ async function submit() {
     submitting.value = false;
   }
 }
+
+onMounted(() => { scheduleDiscover(); });
 </script>
 
 <template>

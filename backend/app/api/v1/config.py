@@ -55,7 +55,7 @@ def test_llm(
     manager = _manager(request, db)
     current = manager.get_values()
     values: dict[str, Any] = {**current, **payload.values}
-    if payload.values.get("llm_api_key") == "********":
+    if payload.values.get("llm_api_key") in (None, "", "********"):
         values["llm_api_key"] = current.get("llm_api_key", "")
     return ok(check_llm_connection(values, request.app.state.settings))
 

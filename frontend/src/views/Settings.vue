@@ -21,10 +21,16 @@ const form = reactive<LlmFormModel>({
 });
 const alertForm = reactive({ prometheus_url: "", prometheus_token: "" });
 const discovery = reactive({ models: [] as string[], loading: false, manual: true, error: "" });
+let discoveryTimer: ReturnType<typeof setTimeout> | undefined;
 
 function updateLlmForm(value: LlmFormModel) {
   mergeLlmForm(form, value);
-  void discover();
+  scheduleDiscover();
+}
+
+function scheduleDiscover() {
+  if (discoveryTimer) clearTimeout(discoveryTimer);
+  discoveryTimer = setTimeout(() => { void discover(); }, 300);
 }
 
 const stateLabel = computed(() => form.llm_provider === "ollama" ? "LOCAL RUNTIME" : "CLOUD RUNTIME");
@@ -60,7 +66,7 @@ function applyConfig(config: Record<string, { value: string | number | boolean; 
 
 async function load() {
   loading.value = true;
-  try { applyConfig(await store.loadConfig()); } catch (error) { ElMessage.error(error instanceof Error ? error.message : "配置读取失败"); } finally { loading.value = false; }
+  try { applyConfig(await store.loadConfig()); scheduleDiscover(); } catch (error) { ElMessage.error(error instanceof Error ? error.message : "配置读取失败"); } finally { loading.value = false; }
 }
 
 async function save() {
