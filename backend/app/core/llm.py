@@ -34,7 +34,7 @@ def get_llm(config: Mapping[str, object], settings: Settings | None = None):
             from langchain_anthropic import ChatAnthropic
         except ImportError as exc:
             raise ValueError("Anthropic provider requires langchain-anthropic") from exc
-        return ChatAnthropic(model=model, anthropic_api_key=api_key, anthropic_url=base_url, temperature=temperature, max_tokens=max_tokens, timeout=timeout, max_retries=max_retries)
+        return ChatAnthropic(model=model, anthropic_api_key=api_key, anthropic_api_url=base_url, temperature=temperature, max_tokens=max_tokens, timeout=timeout, max_retries=max_retries)
     if api_format == "openai_responses":
         if provider not in {"openai", "custom"}:
             raise ValueError("Responses format is supported only by OpenAI or Custom providers")
