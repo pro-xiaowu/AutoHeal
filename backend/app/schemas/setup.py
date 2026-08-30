@@ -1,13 +1,15 @@
-from pydantic import BaseModel, Field, field_validator
+from typing import Literal
 
-
-_MODES = {"local", "openai", "deepseek", "qwen", "azure", "zhipu"}
-
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic_core import PydanticCustomError
 
 class SetupRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     username: str = Field(min_length=1, max_length=100)
     password: str = Field(min_length=8, max_length=255)
-    llm_mode: str = "local"
+    llm_provider: Literal["ollama", "openai", "anthropic", "deepseek", "qwen", "zhipu", "custom"] = "ollama"
+    llm_api_format: Literal["ollama", "openai_chat", "openai_responses", "anthropic_messages"] = "ollama"
     llm_model: str = Field(default="qwen2.5:7b", min_length=1, max_length=255)
     llm_base_url: str = "http://ollama:11434"
     llm_api_key: str = ""
@@ -18,16 +20,17 @@ class SetupRequest(BaseModel):
     prometheus_url: str = ""
     prometheus_token: str = ""
 
-    @field_validator("llm_mode")
-    @classmethod
-    def validate_mode(cls, value: str) -> str:
-        if value not in _MODES:
-            raise ValueError("Unsupported LLM mode")
-        return value
-
-    @field_validator("llm_api_key")
-    @classmethod
-    def validate_key_for_mode(cls, value: str, info):
-        if info.data.get("llm_mode") in _MODES - {"local"} and not value.strip():
-            raise ValueError("API key is required for cloud LLM modes")
-        return value
+    @model_validator(mode="after")
+    def validate_provider_configuration(self):
+        formats = {
+            "ollama": {"ollama"},
+            "openai": {"openai_chat", "openai_responses"},
+            "anthropic": {"anthropic_messages"},
+            "deepseek": {"openai_chat"},
+            "qwen": {"openai_chat"},
+            "zhipu": {"openai_chat"},
+            "custom": {"openai_chat", "openai_responses", "anthropic_messages"},
+        }
+        if self.llm_api_format not in formats[self.llm_provider]:
+            raise PydanticCustomError("provider_format", "Unsupported provider and API format combination")
+        return self

@@ -7,7 +7,8 @@ from app.api.deps import get_current_user, get_db
 from app.api.response import ok
 from app.core.config_manager import ConfigManager
 from app.models.user import User
-from app.schemas.config import ConfigUpdateRequest, LlmTestRequest
+from app.schemas.config import ConfigUpdateRequest, LlmTestRequest, ModelDiscoveryRequest
+from app.services.model_discovery import discover_models
 from app.services.llm_test import check_llm_connection
 
 
@@ -34,6 +35,8 @@ def update_config(
 ):
     if "setup_completed" in payload.values:
         raise HTTPException(status_code=422, detail="setup_completed 只能由安装向导设置")
+    if "llm_mode" in payload.values:
+        raise HTTPException(status_code=422, detail="llm_mode 只读，请使用 llm_provider 和 llm_api_format")
     try:
         manager = _manager(request, db)
         manager.set_values(payload.values, actor=user.username)
@@ -52,6 +55,21 @@ def test_llm(
     manager = _manager(request, db)
     current = manager.get_values()
     values: dict[str, Any] = {**current, **payload.values}
-    if payload.values.get("llm_api_key") == "********":
+    if payload.values.get("llm_api_key") in (None, "", "********"):
         values["llm_api_key"] = current.get("llm_api_key", "")
     return ok(check_llm_connection(values, request.app.state.settings))
+
+
+@router.post("/models/discover")
+def discover_config_models(
+    payload: ModelDiscoveryRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    manager = _manager(request, db)
+    current = manager.get_values()
+    values: dict[str, Any] = {**current, **payload.values}
+    if payload.values.get("llm_api_key") in (None, "", "********"):
+        values["llm_api_key"] = current.get("llm_api_key", "")
+    return ok(discover_models(values, request.app.state.settings))

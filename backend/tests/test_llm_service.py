@@ -3,6 +3,7 @@ from unittest.mock import Mock, patch
 import httpx
 
 from app.core.llm import get_llm
+from app.core.responses_adapter import OpenAIResponsesAdapter
 from app.core.settings import Settings
 from app.services.llm_test import check_llm_connection
 
@@ -50,3 +51,17 @@ def test_api_connection_normalizes_authentication_failure():
         )
     assert result["ok"] is False
     assert result["category"] == "authentication"
+
+
+def test_canonical_openai_selects_chat_client():
+    settings = Settings(_env_file=None, fernet_key="0Vv2P6W3Jj3X7P0zZt3Tq1b6c4l5w2x8s9d0f1g2h3i=")
+    with patch("app.core.llm.ChatOpenAI") as openai:
+        get_llm({"llm_provider": "openai", "llm_api_format": "openai_chat", "llm_api_key": "key"}, settings)
+        openai.assert_called_once()
+
+
+def test_responses_adapter_parses_nested_output():
+    response = httpx.Response(200, json={"output": [{"content": [{"text": "OK"}]}]})
+    with patch("app.core.responses_adapter.httpx.post", return_value=response):
+        result = OpenAIResponsesAdapter(base_url="https://api.example/v1", api_key="key", model="model").invoke("ping")
+    assert result["content"] == "OK"

@@ -1,9 +1,11 @@
 import http from "./http";
+import type { LlmApiFormat, LlmProvider } from "../composables/llmForm";
 
 export interface SetupPayload {
   username: string;
   password: string;
-  llm_mode: string;
+  llm_provider: LlmProvider;
+  llm_api_format: LlmApiFormat;
   llm_model: string;
   llm_base_url: string;
   llm_api_key: string;
@@ -13,6 +15,16 @@ export interface SetupPayload {
   llm_max_retries: number;
   prometheus_url: string;
   prometheus_token: string;
+}
+
+export interface ModelDiscoveryResult {
+  ok: boolean;
+  provider: string;
+  api_format: string;
+  models: string[];
+  manual_input: boolean;
+  category: string;
+  message: string;
 }
 
 export interface ConfigEntry {
@@ -47,6 +59,11 @@ export async function updateConfig(values: Record<string, unknown>): Promise<Con
 
 export async function testLlm(values: Record<string, unknown>) {
   const response = await http.post("/config/test/llm", { values });
+  return response.data.data;
+}
+
+export async function discoverModels(values: Record<string, unknown>, scope: "setup" | "config" = "config"): Promise<ModelDiscoveryResult> {
+  const response = await http.post(scope === "setup" ? "/setup/models/discover" : "/config/models/discover", { values });
   return response.data.data;
 }
 
