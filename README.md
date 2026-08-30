@@ -15,7 +15,7 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-打开 <http://localhost:3000>。首次启动会进入 `/setup`，填写管理员账号、LLM 模式和模型名称后完成初始化。之后使用管理员账号从 `/login` 登录。
+打开 <http://localhost:3000>。首次启动会进入 `/setup`，填写管理员账号、LLM 服务商、API 格式和模型名称后完成初始化。模型列表会自动发现；服务不可达或列表为空时可直接手动输入模型。之后使用管理员账号从 `/login` 登录。
 
 使用 Ollama 本地模式时：
 
@@ -26,9 +26,13 @@ docker compose exec ollama ollama pull qwen2.5:7b
 
 然后在 Setup 或 Settings 中选择 `Ollama 本地`，模型填 `qwen2.5:7b`。本地模式不需要 API Key。
 
-## 云端 LLM
+## LLM 服务商与 API 格式
 
-Settings 支持 `openai`、`deepseek`、`qwen`、`azure` 和 `zhipu`。云端模式必须填写 API Key，Base URL 和模型名称可以覆盖默认值。API Key 使用 Fernet 加密保存在数据库，读取接口只返回掩码。
+Settings 支持 `ollama`、`openai`、`anthropic`、`deepseek`、`qwen`、`zhipu` 和 `custom`。OpenAI 支持 `openai_chat` 与 `openai_responses`；Anthropic 使用 `anthropic_messages`；DeepSeek、通义千问和智谱使用 OpenAI-compatible Chat。云端服务商必须填写 API Key，Base URL 和模型名称可以覆盖默认值。API Key 使用 Fernet 加密保存在数据库，读取接口只返回掩码。
+
+Setup 页面提供匿名的临时模型发现，初始化完成后该入口会关闭；Settings 使用 JWT 保护的 `/api/v1/config/models/discover`。Ollama 从 `/api/tags` 获取模型，OpenAI-compatible 从 `/models` 获取模型，Anthropic 从 `/v1/models` 获取模型。发现失败或返回空列表不会阻止保存，界面会切换为手动模型输入。
+
+旧版本 `llm_mode` 会在启动时幂等迁移：`local` 映射为 `ollama/ollama`，其他旧云端模式映射为对应服务商的 `openai_chat`。历史 Azure 配置迁移为 `custom/openai_chat` 并标记为需要重新配置，不再作为可选服务商。
 
 项目使用 `langchain-ollama==0.2.0` 而不是最初的 `0.1.0`：后者与 `langchain==0.3.0` 的 `langchain-core` 依赖约束冲突，无法在全新环境安装。其余核心版本保持计划约束。
 
@@ -39,7 +43,7 @@ Settings 支持 `openai`、`deepseek`、`qwen`、`azure` 和 `zhipu`。云端模
 - `SECRET_KEY`：JWT 签名密钥。
 - `FERNET_KEY`：必须是 32 字节的 URL-safe Base64 Fernet 密钥；生产环境必须替换开发示例。
 - `DATABASE_URL`：默认 SQLite，可改为 PostgreSQL 连接串。
-- `LLM_MODE`、`LLM_MODEL`、`LLM_BASE_URL`：首次 Setup 的默认值。
+- `LLM_PROVIDER`、`LLM_API_FORMAT`、`LLM_MODEL`、`LLM_BASE_URL`：首次 Setup 的默认值。
 - `LLM_API_KEY`：可选的云端模式初始密钥，保存后会加密。
 - `PROMETHEUS_URL`、`PROMETHEUS_TOKEN`：后续告警接入的默认值。
 
